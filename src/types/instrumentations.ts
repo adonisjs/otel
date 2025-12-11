@@ -1,0 +1,97 @@
+import type { Span } from '@opentelemetry/api'
+import type { InstrumentationConfigMap } from '@opentelemetry/auto-instrumentations-node'
+import type { Instrumentation } from '@opentelemetry/instrumentation'
+
+/**
+ * Value for a known instrumentation: config object, instance, or disabled
+ */
+export type InstrumentationValue<K extends keyof InstrumentationConfigMap> =
+  | InstrumentationConfigMap[K]
+  | Instrumentation
+  | { enabled: false }
+
+/**
+ * Value for a custom instrumentation: instance or disabled
+ */
+export type CustomInstrumentationValue = Instrumentation | { enabled: false }
+
+/**
+ * Extended config for @opentelemetry/instrumentation-http.
+ * Adds AdonisJS-specific helpers for URL filtering.
+ */
+export interface HttpInstrumentationConfig extends Omit<
+  NonNullable<InstrumentationConfigMap['@opentelemetry/instrumentation-http']>,
+  'ignoreIncomingRequestHook'
+> {
+  /**
+   * URLs to ignore in HTTP instrumentation.
+   * Merged with defaults unless `mergeIgnoredUrls` is false.
+   * Supports wildcards: '/internal/*'
+   *
+   * @default ['/health', '/healthz', '/ready', '/metrics', '/favicon.ico', ...]
+   */
+  ignoredUrls?: string[]
+
+  /**
+   * Whether to merge ignoredUrls with default ignored URLs or replace them entirely.
+   * @default true
+   */
+  mergeIgnoredUrls?: boolean
+
+  /**
+   * Custom hook to ignore specific incoming requests.
+   * Called AFTER the ignoredUrls check.
+   */
+  ignoreIncomingRequestHook?: (request: { url?: string }) => boolean
+}
+
+/**
+ * Extended config for @opentelemetry/instrumentation-pino.
+ * Allows custom logHook while preserving the internal one.
+ */
+export interface PinoInstrumentationConfig extends Omit<
+  NonNullable<InstrumentationConfigMap['@opentelemetry/instrumentation-pino']>,
+  'logHook'
+> {
+  /**
+   * Custom log hook executed AFTER the internal hook that adds route info.
+   * Use this to add your own properties to log records.
+   *
+   * @example
+   * ```ts
+   * logHook: (span, record) => {
+   *   record.tenant_id = getCurrentTenantId()
+   * }
+   * ```
+   */
+  logHook?: (span: Span, record: Record<string, unknown>) => void
+}
+
+/**
+ * Keys of instrumentations with custom extended configs
+ */
+type ExtendedInstrumentationKeys =
+  | '@opentelemetry/instrumentation-http'
+  | '@opentelemetry/instrumentation-pino'
+
+/**
+ * Instrumentations configuration map.
+ *
+ * - HTTP and Pino instrumentations have extended configs
+ */
+export type InstrumentationsConfig = {
+  '@opentelemetry/instrumentation-http'?:
+    | HttpInstrumentationConfig
+    | Instrumentation
+    | { enabled: false }
+
+  '@opentelemetry/instrumentation-pino'?:
+    | PinoInstrumentationConfig
+    | Instrumentation
+    | { enabled: false }
+} & {
+  [K in Exclude<
+    keyof InstrumentationConfigMap,
+    ExtendedInstrumentationKeys
+  >]?: InstrumentationValue<K>
+}
