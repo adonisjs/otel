@@ -89,24 +89,13 @@ The middleware enriches HTTP spans with AdonisJS route information (pattern, nam
 The configuration file is located at `config/otel.ts`. The default configuration is intentionally simple with sensible defaults:
 
 ```ts
-import {
-  defineConfig,
-  OTLPTraceExporter,
-  OTLPMetricExporter,
-  PeriodicExportingMetricReader,
-} from '@adonisjs/otel'
+import { defineConfig } from '@adonisjs/otel'
+import env from '#start/env'
 
 export default defineConfig({
-  serviceName: 'my-app',
-  serviceVersion: '1.0.0',
-  environment: process.env.NODE_ENV || 'development',
-
-  traceExporter: new OTLPTraceExporter(),
-  metricReaders: [
-    new PeriodicExportingMetricReader({ exporter: new OTLPMetricExporter() })
-  ],
-
-  instrumentations: {},
+  serviceName: env.get('APP_NAME'),
+  serviceVersion: env.get('APP_VERSION'),
+  environment: env.get('APP_ENV'),
 })
 ```
 
@@ -115,14 +104,14 @@ export default defineConfig({
 Out of the box, the package provides:
 
 - **OTLP exporters** configured for gRPC (standard OpenTelemetry protocol)
-- **Auto-instrumentation** for HTTP, database clients (Knex, Prisma), Redis, and more
-- **Disabled noisy instrumentations** like `dns`, `net`, and `socket.io`
+- **Auto-instrumentation** for HTTP, Lucid (knex), Redis, and more
+- **Disabled noisy instrumentations** like `dns` and `net`
 - **Health check endpoints ignored** to reduce trace noise
 - **Pino log injection** with route information
 
 ### Advanced configuration
 
-Under the hood, this package uses the [OpenTelemetry Node SDK](https://opentelemetry.io/docs/languages/js/getting-started/nodejs/). The `defineConfig` function accepts all options from [`NodeSDKConfiguration`](https://open-telemetry.github.io/opentelemetry-js/interfaces/_opentelemetry_sdk_node.NodeSDKConfiguration.html), so power users have full control:
+Under the hood, this package uses the [OpenTelemetry Node SDK](https://opentelemetry.io/docs/languages/js/getting-started/nodejs/). The `defineConfig` function accepts all options from [`NodeSDKConfiguration`](hhttps://opentelemetry.io/docs/languages/js/getting-started/nodejs/), so power users have full control:
 
 ```ts
 import { defineConfig } from '@adonisjs/otel'
@@ -233,7 +222,6 @@ defineConfig({
     // Pino instrumentation with custom log hook
     '@opentelemetry/instrumentation-pino': {
       // Add custom properties to log records
-      // Internal hook (adds http.route) runs first, then yours
       logHook: (span, record) => {
         record.tenant_id = getCurrentTenantId()
       },
@@ -242,8 +230,8 @@ defineConfig({
     // Disable an instrumentation
     '@opentelemetry/instrumentation-pg': { enabled: false },
 
-    // Use a custom instance (replaces default)
-    '@opentelemetry/instrumentation-redis': new RedisInstrumentation({ ... }),
+    // Use a custom instrumentation
+    'my-custom-instrumentation': new CacheInstrumentation({ ... }),
   },
 })
 ```
