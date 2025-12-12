@@ -22,7 +22,9 @@
     "./helpers": "./build/src/helpers.js",
     "./decorators": "./build/src/decorators.js",
     "./otel_provider": "./build/providers/otel_provider.js",
-    "./otel_middleware": "./build/src/middleware/otel_middleware.js"
+    "./otel_middleware": "./build/src/middleware/otel_middleware.js",
+    "./instrumentations/container": "./build/src/instrumentations/container.js",
+    "./instrumentations/events": "./build/src/instrumentations/events.js"
   },
   "scripts": {
     "clean": "del-cli build",
@@ -70,7 +72,7 @@
   "devDependencies": {
     "@adonisjs/assembler": "^7.8.2",
     "@adonisjs/auth": "^9.5.1",
-    "@adonisjs/core": "^6.19.1",
+    "@adonisjs/core": "^7.0.0-next.14",
     "@adonisjs/eslint-config": "2.1.2",
     "@adonisjs/prettier-config": "^1.4.5",
     "@adonisjs/tsconfig": "^1.4.1",
@@ -92,7 +94,7 @@
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@adonisjs/core": "^6.2.0"
+    "@adonisjs/core": "^6.2.0 || ^7.0.0"
   },
   "publishConfig": {
     "access": "public",

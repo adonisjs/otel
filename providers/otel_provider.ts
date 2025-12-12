@@ -20,7 +20,6 @@ export default class OtelProvider {
     ExceptionHandler.macro(
       'report',
       async function (this: ExceptionHandler, error: unknown, ctx: HttpContext) {
-        // @ts-expect-error - protected method
         const httpError = this.toHttpError(error)
         if (!this.shouldReport(httpError)) return
 
