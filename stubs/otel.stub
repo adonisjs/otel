@@ -1,5 +1,5 @@
 {{{
-  exports({ to: app.makePath('bin/otel.ts') })
+  exports({ to: app.makePath('otel.ts') })
 }}}
 /**
  * OpenTelemetry initialization file.

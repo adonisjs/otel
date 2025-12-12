@@ -24,7 +24,7 @@ export async function configure(command: ConfigureCommand) {
   await codemods.makeUsingStub(stubsRoot, 'config.stub', {})
 
   /**
-   * Publish the bin/otel.ts file
+   * Publish the otel.ts file
    */
   await codemods.makeUsingStub(stubsRoot, 'otel.stub', {})
 
@@ -44,7 +44,7 @@ export async function configure(command: ConfigureCommand) {
       ' * OpenTelemetry initialization - MUST be the first import',
       ' * @see https://opentelemetry.io/docs/languages/js/getting-started/nodejs/',
       ' */',
-      `import './otel.js'`,
+      `import '../otel.js'`,
       '',
     ])
 

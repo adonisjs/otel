@@ -5,14 +5,14 @@
  * to enable auto-instrumentation:
  *
  * ```ts
- * // bin/otel.ts
+ * // otel.ts
  * import { init } from '@adonisjs/otel/init'
  * await init(import.meta.dirname)
  * ```
  *
  * Then import it first in bin/server.ts:
  * ```ts
- * import './otel.js'
+ * import '../otel.js'
  * ```
  */
 
@@ -28,7 +28,7 @@ export async function init(dirname: string) {
   // Import SDK functions after hooks are registered
   const { OtelManager } = await import('./otel.js')
 
-  const configPath = join(dirname, '../config/otel.js')
+  const configPath = join(dirname, 'config/otel.js')
   const config = await import(configPath).then((mod) => mod.default || mod)
   if (!config) throw new Error(`Otel configuration not found at ${configPath}`)
 
