@@ -64,6 +64,7 @@
     "@opentelemetry/sdk-node": "^0.208.0",
     "@opentelemetry/sdk-trace-base": "^2.2.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
+    "@poppinss/utils": "^6.10.1",
     "import-in-the-middle": "^2.0.0"
   },
   "devDependencies": {
@@ -77,6 +78,7 @@
     "@japa/runner": "^4.4.0",
     "@opentelemetry/context-async-hooks": "^2.2.0",
     "@opentelemetry/core": "^2.2.0",
+    "@release-it/conventional-changelog": "^10.0.0",
     "@sentry/node": "^10.30.0",
     "@swc/core": "^1.15.3",
     "@types/node": "^20.19.26",
@@ -84,9 +86,8 @@
     "copyfiles": "^2.4.1",
     "del-cli": "^7.0.0",
     "eslint": "^9.39.1",
-    "@release-it/conventional-changelog": "^10.0.0",
-    "release-it": "^19.0.0",
     "prettier": "^3.7.4",
+    "release-it": "^19.0.0",
     "ts-node-maintained": "^10.9.6",
     "typescript": "^5.9.3"
   },

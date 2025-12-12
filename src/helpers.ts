@@ -144,13 +144,6 @@ export function setUser(user: UserContextResult): void {
   if (user.email) attributes[ATTR_USER_EMAIL] = user.email
   if (user.role) attributes[ATTR_USER_ROLES] = [user.role]
 
-  // Add any extra custom attributes
-  for (const [key, value] of Object.entries(user)) {
-    if (!['id', 'email', 'role'].includes(key) && value !== undefined) {
-      attributes[`user.${key}`] = String(value)
-    }
-  }
-
   span.setAttributes(attributes)
 }
 

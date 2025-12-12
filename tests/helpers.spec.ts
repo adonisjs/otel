@@ -185,17 +185,32 @@ test.group('Helpers', (group) => {
     assert.isUndefined(spans[0].attributes['user.roles'])
   })
 
-  test('setUser adds extra custom attributes', ({ assert }) => {
+  test('setUser does not leak sensitive or extra fields', ({ assert }) => {
     const tracer = trace.getTracer('test')
     tracer.startActiveSpan('user-span', (span) => {
-      setUser({ id: 1, tenant: 'acme', plan: 'pro' })
+      setUser({
+        id: 1,
+        email: 'test@example.com',
+        role: 'admin',
+        password: 'secret123',
+        token: 'jwt-token',
+        hashedPassword: 'abc123',
+      } as any)
       span.end()
     })
 
     const spans = getFinishedSpans()
     assert.lengthOf(spans, 1)
-    assert.equal(spans[0].attributes['user.tenant'], 'acme')
-    assert.equal(spans[0].attributes['user.plan'], 'pro')
+
+    // Only id, email, roles should be present
+    assert.equal(spans[0].attributes['user.id'], '1')
+    assert.equal(spans[0].attributes['user.email'], 'test@example.com')
+    assert.deepEqual(spans[0].attributes['user.roles'], ['admin'])
+
+    // Sensitive fields must NOT be present
+    assert.isUndefined(spans[0].attributes['user.password'])
+    assert.isUndefined(spans[0].attributes['user.token'])
+    assert.isUndefined(spans[0].attributes['user.hashedPassword'])
   })
 
   test('setUser does nothing when no active span', ({ assert }) => {

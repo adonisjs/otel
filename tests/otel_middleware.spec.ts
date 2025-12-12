@@ -305,7 +305,7 @@ test.group('OtelMiddleware', (group) => {
     assert.isUndefined(spans[0].attributes['user.id'])
   })
 
-  test('resolver can add custom attributes', async ({ assert }) => {
+  test('resolver only exposes id, email, and role (no custom attributes)', async ({ assert }) => {
     const middleware = new OtelMiddleware({
       userContext: {
         resolver: (ctx) => {
@@ -313,16 +313,24 @@ test.group('OtelMiddleware', (group) => {
           if (!user) return null
           return {
             id: user.id as number,
+            email: user.email as string,
+            role: user.role as string,
             tenantId: user.tenantId as string,
             plan: user.plan as string,
-          }
+          } as any
         },
       },
     })
     const ctx = createMockContext({
       route: { pattern: '/profile' },
       auth: {
-        user: { id: 42, tenantId: 'tenant-123', plan: 'enterprise' },
+        user: {
+          id: 42,
+          email: 'test@example.com',
+          role: 'admin',
+          tenantId: 'tenant-123',
+          plan: 'enterprise',
+        },
       },
     })
     const tracer = trace.getTracer('test')
@@ -335,8 +343,10 @@ test.group('OtelMiddleware', (group) => {
     const spans = getFinishedSpans()
     assert.lengthOf(spans, 1)
     assert.equal(spans[0].attributes['user.id'], '42')
-    assert.equal(spans[0].attributes['user.tenantId'], 'tenant-123')
-    assert.equal(spans[0].attributes['user.plan'], 'enterprise')
+    assert.equal(spans[0].attributes['user.email'], 'test@example.com')
+    assert.deepEqual(spans[0].attributes['user.roles'], ['admin'])
+    assert.isUndefined(spans[0].attributes['user.tenantId'])
+    assert.isUndefined(spans[0].attributes['user.plan'])
   })
 })
 

@@ -44,13 +44,6 @@ export interface OtelConfig extends Partial<
    * This option is ignored if `sampler` is explicitly provided.
    *
    * @default 1.0
-   *
-   * @example
-   * ```ts
-   * defineConfig({
-   *   samplingRatio: 0.1, // Sample 10% of traces in production
-   * })
-   * ```
    */
   samplingRatio?: number
 
@@ -61,13 +54,6 @@ export interface OtelConfig extends Partial<
    * to help with local development and debugging.
    *
    * @default false
-   *
-   * @example
-   * ```ts
-   * defineConfig({
-   *   debug: true, // Print spans to console
-   * })
-   * ```
    */
   debug?: boolean
 
@@ -144,7 +130,6 @@ export interface UserContextResult {
   id: string | number
   email?: string
   role?: string
-  [key: string]: unknown
 }
 
 /**
@@ -172,7 +157,6 @@ export interface UserContext {
   id: string | number
   email?: string
   role?: string
-  [key: string]: unknown
 }
 
 /**
