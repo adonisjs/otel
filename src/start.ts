@@ -28,7 +28,7 @@ export async function init(dirname: string) {
   // Import SDK functions after hooks are registered
   const { OtelManager } = await import('./otel.js')
 
-  const configPath = join(dirname, '../config/otel.ts')
+  const configPath = join(dirname, '../config/otel.js')
   const config = await import(configPath).then((mod) => mod.default || mod)
   if (!config) throw new Error(`Otel configuration not found at ${configPath}`)
 
