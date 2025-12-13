@@ -62,7 +62,7 @@ export class TestableEventsInstrumentation extends EventsInstrumentation {
     return this.handleError(message)
   }
 
-  testGetEventName(event: unknown) {
+  testGetEventName(event: any) {
     return this.getEventName(event)
   }
 }
