@@ -20,9 +20,6 @@ export default class OtelProvider {
     ExceptionHandler.macro(
       'report',
       async function (this: ExceptionHandler, error: unknown, ctx: HttpContext) {
-        const httpError = this.toHttpError(error)
-        if (!this.shouldReport(httpError)) return
-
         const span = getCurrentSpan()
         if (span && error instanceof Error) {
           span.recordException(error)
