@@ -23,6 +23,7 @@ import type {
   PinoInstrumentationConfig,
 } from './types/instrumentations.js'
 import { HttpContext } from '@adonisjs/core/http'
+import { HttpUrlFilter } from './http_url_filter.js'
 
 /**
  * OpenTelemetry SDK manager for AdonisJS.
@@ -43,17 +44,6 @@ import { HttpContext } from '@adonisjs/core/http'
  * ```
  */
 export class OtelManager {
-  static readonly DEFAULT_IGNORED_URLS = [
-    '/health',
-    '/healthz',
-    '/internal/healthz',
-    '/ready',
-    '/readiness',
-    '/metrics',
-    '/internal/metrics',
-    '/favicon.ico',
-  ]
-
   static #instance: OtelManager | null = null
   readonly sdk: NodeSDK
   readonly serviceName: string
@@ -107,36 +97,6 @@ export class OtelManager {
       [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]: this.environment,
       [ATTR_SERVICE_INSTANCE_ID]: process.env.HOSTNAME || crypto.randomUUID(),
       ...this.#config.resourceAttributes,
-    })
-  }
-
-  /**
-   * Get the resolved list of ignored URLs from HTTP instrumentation config
-   */
-  #getIgnoredUrls(httpConfig: HttpInstrumentationConfig | undefined): string[] {
-    const userUrls = httpConfig?.ignoredUrls || []
-    const mergeWithDefaults = httpConfig?.mergeIgnoredUrls !== false
-
-    if (!mergeWithDefaults) {
-      return userUrls
-    }
-
-    return [...OtelManager.DEFAULT_IGNORED_URLS, ...userUrls]
-  }
-
-  /**
-   * Check if a URL should be ignored based on the ignored URLs list.
-   * Supports exact matches and wildcard patterns (e.g., '/internal/*')
-   */
-  #shouldIgnoreUrl(url: string | undefined, ignoredUrls: string[]): boolean {
-    if (!url) return false
-
-    return ignoredUrls.some((pattern) => {
-      if (pattern.endsWith('/*')) {
-        const prefix = pattern.slice(0, -1)
-        return url.startsWith(prefix)
-      }
-      return url.startsWith(pattern)
     })
   }
 
@@ -239,41 +199,13 @@ export class OtelManager {
       mergedConfig[name as keyof InstrumentationConfigMap] = { enabled: false } as any
     }
 
-    this.#applyHttpInstrumentationConfig(mergedConfig, httpConfig)
+    const httpUrlFilter = new HttpUrlFilter(httpConfig)
+    httpUrlFilter.applyToConfig(mergedConfig, httpConfig)
     this.#applyPinoInstrumentationConfig(mergedConfig, pinoConfig)
 
     const autoInstrumentations = getNodeAutoInstrumentations(mergedConfig)
 
     return [...autoInstrumentations, ...customInstances]
-  }
-
-  /**
-   * Apply HTTP instrumentation configuration with smart merging of ignoreIncomingRequestHook
-   */
-  #applyHttpInstrumentationConfig(
-    mergedConfig: InstrumentationConfigMap,
-    userHttpConfig: HttpInstrumentationConfig | undefined
-  ): void {
-    const httpKey = '@opentelemetry/instrumentation-http' as const
-    const currentConfig = mergedConfig[httpKey]
-
-    if (currentConfig && 'enabled' in currentConfig && currentConfig.enabled === false) {
-      return
-    }
-
-    const ignoredUrls = this.#getIgnoredUrls(userHttpConfig)
-    const userIgnoreHook = userHttpConfig?.ignoreIncomingRequestHook
-
-    mergedConfig[httpKey] = {
-      ...currentConfig,
-      ...userHttpConfig,
-      ignoreIncomingRequestHook: (req: { url?: string }) => {
-        if (this.#shouldIgnoreUrl(req.url, ignoredUrls)) return true
-        if (userIgnoreHook) return userIgnoreHook(req)
-
-        return false
-      },
-    }
   }
 
   /**

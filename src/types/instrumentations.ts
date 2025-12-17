@@ -26,9 +26,9 @@ export interface HttpInstrumentationConfig extends Omit<
   /**
    * URLs to ignore in HTTP instrumentation.
    * Merged with defaults unless `mergeIgnoredUrls` is false.
-   * Supports wildcards: '/internal/*'
+   * Supports exact matches and prefix patterns ('/internal/*').
    *
-   * @default ['/health', '/healthz', '/ready', '/metrics', '/favicon.ico', ...]
+   * @default ['/health', '/healthz', '/ready', '/metrics', ...]
    */
   ignoredUrls?: string[]
 
@@ -39,8 +39,14 @@ export interface HttpInstrumentationConfig extends Omit<
   mergeIgnoredUrls?: boolean
 
   /**
+   * Whether to automatically ignore static files (css, js, images, fonts, etc.).
+   * @default true
+   */
+  ignoreStaticFiles?: boolean
+
+  /**
    * Custom hook to ignore specific incoming requests.
-   * Called AFTER the ignoredUrls check.
+   * Called AFTER the ignoredUrls and static files checks.
    */
   ignoreIncomingRequestHook?: (request: { url?: string }) => boolean
 }
