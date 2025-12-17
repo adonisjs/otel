@@ -37,6 +37,7 @@
     "test": "c8 npm run quick:test",
     "prebuild": "npm run lint && npm run clean",
     "build": "tsc",
+    "checks": "npm run lint && npm run typecheck && npm run test",
     "postbuild": "npm run copy:templates",
     "release": "release-it",
     "version": "npm run build",
