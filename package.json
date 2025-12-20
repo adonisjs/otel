@@ -18,7 +18,8 @@
   "exports": {
     ".": "./build/index.js",
     "./init": "./build/src/start.js",
-    "./types": "./build/src/types.js",
+    "./types": "./build/src/types/index.js",
+    "./manager": "./build/src/otel.js",
     "./helpers": "./build/src/helpers.js",
     "./decorators": "./build/src/decorators.js",
     "./otel_provider": "./build/providers/otel_provider.js",
