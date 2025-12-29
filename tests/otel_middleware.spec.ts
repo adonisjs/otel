@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
-import { trace } from '@opentelemetry/api'
+import { context, trace } from '@opentelemetry/api'
+import { getRPCMetadata, RPCType, setRPCMetadata } from '@opentelemetry/core'
 import { setupTracing, resetSpans, getFinishedSpans } from './helpers/setup_tracing.js'
 import OtelMiddleware from '../src/middleware/otel_middleware.js'
 
@@ -42,7 +43,7 @@ test.group('OtelMiddleware', (group) => {
     assert.equal(spans[0].name, 'GET /users/:id')
   })
 
-  test('sets http.route attribute', async ({ assert }) => {
+  test('sets http.route via RPCMetadata', async ({ assert }) => {
     const middleware = new OtelMiddleware({})
     const ctx = createMockContext({
       route: { pattern: '/api/orders', name: 'orders.index' },
@@ -51,13 +52,44 @@ test.group('OtelMiddleware', (group) => {
     const tracer = trace.getTracer('test')
 
     await tracer.startActiveSpan('http-request', async (span) => {
-      await middleware.handle(ctx, async () => {})
+      const rpcMetadata = { type: RPCType.HTTP, span }
+      const ctxWithRpc = setRPCMetadata(context.active(), rpcMetadata)
+
+      await context.with(ctxWithRpc, async () => {
+        await middleware.handle(ctx, async () => {})
+
+        const metadata = getRPCMetadata(context.active())
+        assert.equal(metadata?.route, '/api/orders')
+      })
+
       span.end()
     })
 
     const spans = getFinishedSpans()
     assert.lengthOf(spans, 1)
-    assert.equal(spans[0].attributes['http.route'], '/api/orders')
+  })
+
+  test('does not set rpcMetadata.route when route is not available', async ({ assert }) => {
+    const middleware = new OtelMiddleware({})
+    const ctx = createMockContext({
+      route: undefined,
+      method: 'GET',
+    })
+    const tracer = trace.getTracer('test')
+
+    await tracer.startActiveSpan('http-request', async (span) => {
+      const rpcMetadata = { type: RPCType.HTTP, span }
+      const ctxWithRpc = setRPCMetadata(context.active(), rpcMetadata)
+
+      await context.with(ctxWithRpc, async () => {
+        await middleware.handle(ctx, async () => {})
+
+        const metadata = getRPCMetadata(context.active())
+        assert.isUndefined(metadata?.route)
+      })
+
+      span.end()
+    })
   })
 
   test('sets adonis.route.name attribute', async ({ assert }) => {

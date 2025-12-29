@@ -1,4 +1,5 @@
-import { trace } from '@opentelemetry/api'
+import { context, Span, trace } from '@opentelemetry/api'
+import { getRPCMetadata, RPCType } from '@opentelemetry/core'
 import {
   ATTR_HTTP_RESPONSE_STATUS_CODE,
   ATTR_HTTP_ROUTE,
@@ -12,14 +13,10 @@ import type { UserContextConfig } from '../types/index.js'
 import type {} from '@adonisjs/auth/initialize_auth_middleware'
 
 /**
- * Middleware that enriches the active OpenTelemetry span with AdonisJS
- * specific attributes like the route pattern, user info, etc.
+ * Enriches the active OpenTelemetry span with AdonisJS-specific attributes.
  *
- * This should be registered as a router middleware to run after the
- * route has been resolved.
- *
- * When Auth module is installed, it will automatically set user
- * attributes on the span if a user is authenticated.
+ * Should be registered as a router middleware so it runs after route resolution.
+ * Automatically extracts user context from Auth module when available.
  */
 export default class OtelMiddleware {
   #userContextConfig: UserContextConfig | false
@@ -29,52 +26,64 @@ export default class OtelMiddleware {
   }
 
   /**
-   * Try to extract user from auth and set on span
-   *
-   * @see https://opentelemetry.io/docs/specs/semconv/registry/attributes/user/
+   * Extracts user from auth context and sets OTEL user attributes.
+   * Supports custom resolvers or defaults to ctx.auth.user fields.
    */
   async #setUserFromAuth(ctx: HttpContext): Promise<void> {
     if (this.#userContextConfig === false) return
     if (this.#userContextConfig.enabled === false) return
 
-    // Custom resolver takes precedence
     if (this.#userContextConfig.resolver) {
       const resolved = await this.#userContextConfig.resolver(ctx)
       if (resolved) setUser(resolved)
       return
     }
 
-    // Default: extract from ctx.auth.user
     const user = ctx.auth?.user as Record<string, any> | undefined
     if (!user) return
 
     setUser({ id: user.id, email: user.email, role: user.role })
   }
 
+  /**
+   * Sets route metadata via RPCMetadata for OTEL HTTP instrumentation.
+   * This is the standard mechanism OTEL uses to populate http.route attribute.
+   */
+  #setRouteViaRpcMetadata(routePattern: string): void {
+    const rpcMetadata = getRPCMetadata(context.active())
+    if (rpcMetadata?.type === RPCType.HTTP) rpcMetadata.route = routePattern
+  }
+
+  /**
+   * Updates span name and sets http.route attribute directly.
+   * Produces better trace names like "GET /users/:id" instead of just "GET".
+   */
+  #updateSpanWithRoute(options: { span: Span; method: string; routePattern: string }): void {
+    options.span?.updateName(`${options.method} ${options.routePattern}`)
+    options.span?.setAttribute(ATTR_HTTP_ROUTE, options.routePattern)
+  }
+
+  /**
+   * Enriches active span with route info, user context, and response status.
+   */
   async handle(ctx: HttpContext, next: NextFn) {
     const span = trace.getActiveSpan()
     if (!span) return next()
 
     const { request, route } = ctx
 
-    /**
-     * Update span name with HTTP method and route pattern
-     * This gives much better trace names like "GET /users/:id" instead of "GET"
-     */
     if (route?.pattern) {
-      span.updateName(`${request.method()} ${route.pattern}`)
-      span.setAttribute(ATTR_HTTP_ROUTE, route.pattern)
+      this.#setRouteViaRpcMetadata(route.pattern)
+      this.#updateSpanWithRoute({ span, method: request.method(), routePattern: route.pattern })
     }
 
     span.setAttributes({ 'adonis.route.name': route?.name ?? 'unknown' })
 
-    /**
-     * Automatically set user context from Auth module
-     */
     await this.#setUserFromAuth(ctx)
 
     const output = await next()
     span.setAttribute(ATTR_HTTP_RESPONSE_STATUS_CODE, ctx.response.getStatus())
+
     return output
   }
 }

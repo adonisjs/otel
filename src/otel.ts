@@ -11,7 +11,11 @@ import {
   SimpleSpanProcessor,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-base'
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
+import {
+  ATTR_HTTP_ROUTE,
+  ATTR_SERVICE_NAME,
+  ATTR_SERVICE_VERSION,
+} from '@opentelemetry/semantic-conventions'
 import {
   ATTR_DEPLOYMENT_ENVIRONMENT_NAME,
   ATTR_SERVICE_INSTANCE_ID,
@@ -223,16 +227,14 @@ export class OtelManager {
     }
 
     const userLogHook = userPinoConfig?.logHook
-    const internalLogHook = (span: import('@opentelemetry/api').Span) => {
-      const httpContext = HttpContext.get()
-      span.setAttribute('http.route', httpContext?.route?.pattern || '')
-    }
-
     mergedConfig[pinoKey] = {
       ...currentConfig,
       ...userPinoConfig,
       logHook: (span, record) => {
-        internalLogHook(span)
+        const httpContext = HttpContext.get()
+        const routePattern = httpContext?.route?.pattern
+        if (routePattern) span.setAttribute(ATTR_HTTP_ROUTE, routePattern)
+
         if (userLogHook) userLogHook(span, record as Record<string, unknown>)
       },
     }
