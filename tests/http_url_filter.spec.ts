@@ -5,33 +5,33 @@ test.group('HttpUrlFilter', () => {
   test('ignores static files and health endpoints by default', ({ assert }) => {
     const filter = new HttpUrlFilter()
 
-    assert.isTrue(filter.shouldIgnore('/health'))
-    assert.isTrue(filter.shouldIgnore('/assets/app.js'))
-    assert.isFalse(filter.shouldIgnore('/api/users'))
-    assert.isFalse(filter.shouldIgnore('/api/users.json'))
+    assert.isTrue(filter.shouldIgnore({ url: '/health' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/assets/app.js' }))
+    assert.isFalse(filter.shouldIgnore({ url: '/api/users' }))
+    assert.isFalse(filter.shouldIgnore({ url: '/api/users.json' }))
   })
 
   test('does not match partial path segments', ({ assert }) => {
     const filter = new HttpUrlFilter()
 
-    assert.isTrue(filter.shouldIgnore('/health'))
-    assert.isTrue(filter.shouldIgnore('/health/check'))
-    assert.isFalse(filter.shouldIgnore('/healthcare'))
+    assert.isTrue(filter.shouldIgnore({ url: '/health' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/health/check' }))
+    assert.isFalse(filter.shouldIgnore({ url: '/healthcare' }))
   })
 
   test('can disable static files filtering', ({ assert }) => {
     const filter = new HttpUrlFilter({ ignoreStaticFiles: false })
 
-    assert.isFalse(filter.shouldIgnore('/assets/app.js'))
-    assert.isTrue(filter.shouldIgnore('/health'))
+    assert.isFalse(filter.shouldIgnore({ url: '/assets/app.js' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/health' }))
   })
 
   test('supports prefix patterns and custom URLs', ({ assert }) => {
     const filter = new HttpUrlFilter({ ignoredUrls: ['/internal/*'] })
 
-    assert.isTrue(filter.shouldIgnore('/internal/status'))
-    assert.isTrue(filter.shouldIgnore('/health'))
-    assert.isFalse(filter.shouldIgnore('/api/internal'))
+    assert.isTrue(filter.shouldIgnore({ url: '/internal/status' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/health' }))
+    assert.isFalse(filter.shouldIgnore({ url: '/api/internal' }))
   })
 
   test('can replace defaults with mergeIgnoredUrls false', ({ assert }) => {
@@ -40,7 +40,37 @@ test.group('HttpUrlFilter', () => {
       mergeIgnoredUrls: false,
     })
 
-    assert.isFalse(filter.shouldIgnore('/health'))
-    assert.isTrue(filter.shouldIgnore('/custom'))
+    assert.isFalse(filter.shouldIgnore({ url: '/health' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/custom' }))
+  })
+
+  test('ignores OPTIONS requests by default', ({ assert }) => {
+    const filter = new HttpUrlFilter()
+
+    assert.isTrue(filter.shouldIgnore({ url: '/api/users', method: 'OPTIONS' }))
+    assert.isFalse(filter.shouldIgnore({ url: '/api/users', method: 'GET' }))
+    assert.isFalse(filter.shouldIgnore({ url: '/api/users', method: 'POST' }))
+  })
+
+  test('can disable OPTIONS requests filtering', ({ assert }) => {
+    const filter = new HttpUrlFilter({ ignoreOptionsRequests: false })
+
+    assert.isFalse(filter.shouldIgnore({ url: '/api/users', method: 'OPTIONS' }))
+  })
+
+  test('passes method to custom hook', ({ assert }) => {
+    let receivedRequest: { url?: string; method?: string } | undefined
+
+    const filter = new HttpUrlFilter({
+      ignoreOptionsRequests: false,
+      ignoreIncomingRequestHook: (request) => {
+        receivedRequest = request
+        return false
+      },
+    })
+
+    filter.shouldIgnore({ url: '/api/test', method: 'PUT' })
+
+    assert.deepEqual(receivedRequest, { url: '/api/test', method: 'PUT' })
   })
 })

@@ -1,5 +1,5 @@
 import type { InstrumentationConfigMap } from '@opentelemetry/auto-instrumentations-node'
-import type { HttpInstrumentationConfig } from './types/instrumentations.js'
+import type { HttpInstrumentationConfig, IgnoreRequestInfo } from './types/instrumentations.js'
 
 /**
  * Handles URL filtering for OpenTelemetry HTTP instrumentation.
@@ -48,11 +48,13 @@ export class HttpUrlFilter {
 
   #ignoredUrls: string[]
   #ignoreStaticFiles: boolean
-  #userIgnoreHook?: (request: { url?: string }) => boolean
+  #ignoreOptionsRequests: boolean
+  #userIgnoreHook?: (request: IgnoreRequestInfo) => boolean
 
   constructor(config?: HttpInstrumentationConfig) {
     this.#ignoredUrls = this.#buildIgnoredUrls(config)
     this.#ignoreStaticFiles = config?.ignoreStaticFiles !== false
+    this.#ignoreOptionsRequests = config?.ignoreOptionsRequests !== false
     this.#userIgnoreHook = config?.ignoreIncomingRequestHook
   }
 
@@ -85,20 +87,24 @@ export class HttpUrlFilter {
   }
 
   /**
-   * Check if a URL should be ignored (not traced).
-   * A URL is ignored if:
+   * Check if a request should be ignored (not traced).
+   * A request is ignored if:
+   * - It's an OPTIONS request and ignoreOptionsRequests is true (default)
    * - It's a static file and ignoreStaticFiles is true (default)
    * - It matches the ignored URLs list (exact or prefix pattern)
    * - The user's custom hook returns true
    */
-  shouldIgnore(url: string | undefined): boolean {
+  shouldIgnore(request: IgnoreRequestInfo): boolean {
+    const { url, method } = request
+
+    if (this.#ignoreOptionsRequests && method === 'OPTIONS') return true
     if (!url) return false
 
     const urlPath = url.split('?')[0]
 
     if (this.#ignoreStaticFiles && this.#isStaticFile(urlPath)) return true
     if (this.#ignoredUrls.some((pattern) => this.#matchesPattern(urlPath, pattern))) return true
-    if (this.#userIgnoreHook) return this.#userIgnoreHook({ url })
+    if (this.#userIgnoreHook) return this.#userIgnoreHook(request)
 
     return false
   }
@@ -120,7 +126,8 @@ export class HttpUrlFilter {
     mergedConfig[httpKey] = {
       ...currentConfig,
       ...userHttpConfig,
-      ignoreIncomingRequestHook: (req: { url?: string }) => this.shouldIgnore(req.url),
+      ignoreIncomingRequestHook: (req: { url?: string; method?: string }) =>
+        this.shouldIgnore({ url: req.url, method: req.method }),
     }
   }
 }

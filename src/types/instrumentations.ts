@@ -16,6 +16,14 @@ export type InstrumentationValue<K extends keyof InstrumentationConfigMap> =
 export type CustomInstrumentationValue = Instrumentation | { enabled: false }
 
 /**
+ * Request info passed to the ignoreIncomingRequestHook
+ */
+export interface IgnoreRequestInfo {
+  url?: string
+  method?: string
+}
+
+/**
  * Extended config for @opentelemetry/instrumentation-http.
  * Adds AdonisJS-specific helpers for URL filtering.
  */
@@ -45,10 +53,16 @@ export interface HttpInstrumentationConfig extends Omit<
   ignoreStaticFiles?: boolean
 
   /**
-   * Custom hook to ignore specific incoming requests.
-   * Called AFTER the ignoredUrls and static files checks.
+   * Whether to automatically ignore OPTIONS requests (CORS preflight).
+   * @default true
    */
-  ignoreIncomingRequestHook?: (request: { url?: string }) => boolean
+  ignoreOptionsRequests?: boolean
+
+  /**
+   * Custom hook to ignore specific incoming requests.
+   * Called AFTER the ignoredUrls, static files, and OPTIONS checks.
+   */
+  ignoreIncomingRequestHook?: (request: IgnoreRequestInfo) => boolean
 }
 
 /**
