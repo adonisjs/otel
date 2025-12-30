@@ -89,6 +89,7 @@
     "@adonisjs/tsconfig": "^1.4.1",
     "@japa/assert": "^4.1.1",
     "@japa/runner": "^4.4.0",
+    "@julr/otel-instrumentation-clickhouse": "^1.0.2",
     "@opentelemetry/context-async-hooks": "^2.2.0",
     "@release-it/conventional-changelog": "^10.0.0",
     "@sentry/node": "^10.30.0",

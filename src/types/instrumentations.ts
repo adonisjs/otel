@@ -95,9 +95,20 @@ type ExtendedInstrumentationKeys =
   | '@opentelemetry/instrumentation-pino'
 
 /**
+ * All possible values for any instrumentation key
+ */
+type AnyInstrumentationValue =
+  | HttpInstrumentationConfig
+  | PinoInstrumentationConfig
+  | InstrumentationConfigMap[keyof InstrumentationConfigMap]
+  | CustomInstrumentationValue
+
+/**
  * Instrumentations configuration map.
  *
  * - HTTP and Pino instrumentations have extended configs
+ * - Known OpenTelemetry instrumentations have typed configs with autocomplete
+ * - Custom instrumentations can be added with any string key
  */
 export type InstrumentationsConfig = {
   '@opentelemetry/instrumentation-http'?:
@@ -114,4 +125,6 @@ export type InstrumentationsConfig = {
     keyof InstrumentationConfigMap,
     ExtendedInstrumentationKeys
   >]?: InstrumentationValue<K>
+} & {
+  [key: string & {}]: AnyInstrumentationValue | undefined
 }
