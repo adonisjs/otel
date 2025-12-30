@@ -124,12 +124,14 @@ export interface OtelConfig extends Partial<
 }
 
 /**
- * Result returned by the user context resolver
+ * Result returned by the user context resolver.
+ * Supports custom attributes via index signature.
  */
 export interface UserContextResult {
   id: string | number
   email?: string
   role?: string
+  [key: string]: string | number | boolean | string[] | undefined
 }
 
 /**

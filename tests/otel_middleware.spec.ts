@@ -337,7 +337,7 @@ test.group('OtelMiddleware', (group) => {
     assert.isUndefined(spans[0].attributes['user.id'])
   })
 
-  test('resolver only exposes id, email, and role (no custom attributes)', async ({ assert }) => {
+  test('resolver can expose custom attributes', async ({ assert }) => {
     const middleware = new OtelMiddleware({
       userContext: {
         resolver: (ctx) => {
@@ -349,7 +349,7 @@ test.group('OtelMiddleware', (group) => {
             role: user.role as string,
             tenantId: user.tenantId as string,
             plan: user.plan as string,
-          } as any
+          }
         },
       },
     })
@@ -377,8 +377,8 @@ test.group('OtelMiddleware', (group) => {
     assert.equal(spans[0].attributes['user.id'], '42')
     assert.equal(spans[0].attributes['user.email'], 'test@example.com')
     assert.deepEqual(spans[0].attributes['user.roles'], ['admin'])
-    assert.isUndefined(spans[0].attributes['user.tenantId'])
-    assert.isUndefined(spans[0].attributes['user.plan'])
+    assert.equal(spans[0].attributes['user.tenantId'], 'tenant-123')
+    assert.equal(spans[0].attributes['user.plan'], 'enterprise')
   })
 })
 

@@ -120,16 +120,24 @@ const ATTR_USER_ROLES = 'user.roles'
  * Set user information on the currently active span.
  *
  * Uses OpenTelemetry semantic conventions for user attributes.
+ * Custom attributes are prefixed with `user.` automatically.
  *
  * @example
  * ```ts
  * import { setUser } from '@adonisjs/otel'
  *
- * // In a controller or middleware
+ * // Basic usage
  * setUser({
  *   id: auth.user.id,
  *   email: auth.user.email,
  *   role: auth.user.role,
+ * })
+ *
+ * // With custom attributes
+ * setUser({
+ *   id: auth.user.id,
+ *   tenantId: auth.user.tenantId,
+ *   plan: 'enterprise',
  * })
  * ```
  */
@@ -143,6 +151,14 @@ export function setUser(user: UserContextResult): void {
 
   if (user.email) attributes[ATTR_USER_EMAIL] = user.email
   if (user.role) attributes[ATTR_USER_ROLES] = [user.role]
+
+  // Add custom attributes with user. prefix
+  for (const [key, value] of Object.entries(user)) {
+    if (key === 'id' || key === 'email' || key === 'role') continue
+    if (value === undefined) continue
+
+    attributes[`user.${key}`] = value
+  }
 
   span.setAttributes(attributes)
 }

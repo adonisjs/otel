@@ -185,32 +185,51 @@ test.group('Helpers', (group) => {
     assert.isUndefined(spans[0].attributes['user.roles'])
   })
 
-  test('setUser does not leak sensitive or extra fields', ({ assert }) => {
+  test('setUser sets custom attributes with user. prefix', ({ assert }) => {
     const tracer = trace.getTracer('test')
     tracer.startActiveSpan('user-span', (span) => {
       setUser({
         id: 1,
         email: 'test@example.com',
         role: 'admin',
-        password: 'secret123',
-        token: 'jwt-token',
-        hashedPassword: 'abc123',
-      } as any)
+        tenantId: 'tenant-123',
+        plan: 'enterprise',
+        isVerified: true,
+      })
       span.end()
     })
 
     const spans = getFinishedSpans()
     assert.lengthOf(spans, 1)
 
-    // Only id, email, roles should be present
+    // Standard fields
     assert.equal(spans[0].attributes['user.id'], '1')
     assert.equal(spans[0].attributes['user.email'], 'test@example.com')
     assert.deepEqual(spans[0].attributes['user.roles'], ['admin'])
 
-    // Sensitive fields must NOT be present
-    assert.isUndefined(spans[0].attributes['user.password'])
-    assert.isUndefined(spans[0].attributes['user.token'])
-    assert.isUndefined(spans[0].attributes['user.hashedPassword'])
+    // Custom fields with user. prefix
+    assert.equal(spans[0].attributes['user.tenantId'], 'tenant-123')
+    assert.equal(spans[0].attributes['user.plan'], 'enterprise')
+    assert.equal(spans[0].attributes['user.isVerified'], true)
+  })
+
+  test('setUser ignores undefined custom attributes', ({ assert }) => {
+    const tracer = trace.getTracer('test')
+    tracer.startActiveSpan('user-span', (span) => {
+      setUser({
+        id: 1,
+        tenantId: undefined,
+        plan: 'free',
+      })
+      span.end()
+    })
+
+    const spans = getFinishedSpans()
+    assert.lengthOf(spans, 1)
+
+    assert.equal(spans[0].attributes['user.id'], '1')
+    assert.equal(spans[0].attributes['user.plan'], 'free')
+    assert.isUndefined(spans[0].attributes['user.tenantId'])
   })
 
   test('setUser does nothing when no active span', ({ assert }) => {
