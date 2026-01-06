@@ -44,7 +44,11 @@ export class HttpUrlFilter {
     'ogg',
     'wav',
     'pdf',
+    'vue',
+    'svelte',
   ])
+
+  static readonly VITE_DEV_PATTERNS = ['/@vite/', '/@id/', '/@fs/', '/__vite']
 
   #ignoredUrls: string[]
   #ignoreStaticFiles: boolean
@@ -77,6 +81,10 @@ export class HttpUrlFilter {
     return HttpUrlFilter.STATIC_FILE_EXTENSIONS.has(extension)
   }
 
+  #isViteDevRequest(url: string): boolean {
+    return HttpUrlFilter.VITE_DEV_PATTERNS.some((pattern) => url.startsWith(pattern))
+  }
+
   #matchesPattern(urlPath: string, pattern: string): boolean {
     if (pattern.endsWith('/*')) {
       const prefix = pattern.slice(0, -2)
@@ -103,6 +111,7 @@ export class HttpUrlFilter {
     const urlPath = url.split('?')[0]
 
     if (this.#ignoreStaticFiles && this.#isStaticFile(urlPath)) return true
+    if (this.#ignoreStaticFiles && this.#isViteDevRequest(urlPath)) return true
     if (this.#ignoredUrls.some((pattern) => this.#matchesPattern(urlPath, pattern))) return true
     if (this.#userIgnoreHook) return this.#userIgnoreHook(request)
 
