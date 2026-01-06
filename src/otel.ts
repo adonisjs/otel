@@ -28,6 +28,7 @@ import type {
 } from './types/instrumentations.js'
 import { HttpContext } from '@adonisjs/core/http'
 import { HttpUrlFilter } from './http_url_filter.js'
+import debug from './debug.js'
 
 /**
  * OpenTelemetry SDK manager for AdonisJS.
@@ -190,6 +191,13 @@ export class OtelManager {
     const { customInstances, disabledSet, configOverrides, httpConfig, pinoConfig } =
       this.#processUserInstrumentations(this.#config.instrumentations)
 
+    if (disabledSet.size > 0) debug('disabled instrumentations: %O', [...disabledSet])
+    if (customInstances.length > 0)
+      debug(
+        'custom instrumentations: %O',
+        customInstances.map((i) => i.instrumentationName)
+      )
+
     const mergedConfig = this.#buildBaseInstrumentationConfig()
 
     for (const [name, config] of Object.entries(configOverrides)) {
@@ -288,6 +296,12 @@ export class OtelManager {
    * Start the OpenTelemetry SDK
    */
   start(): void {
+    debug(
+      'starting otel sdk for service "%s" v%s (%s)',
+      this.serviceName,
+      this.serviceVersion,
+      this.environment
+    )
     this.sdk.start()
   }
 
@@ -295,6 +309,7 @@ export class OtelManager {
    * Gracefully shutdown the OpenTelemetry SDK
    */
   async shutdown(): Promise<void> {
+    debug('shutting down otel sdk')
     await this.sdk.shutdown()
   }
 

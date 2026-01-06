@@ -1,5 +1,6 @@
 import type { InstrumentationConfigMap } from '@opentelemetry/auto-instrumentations-node'
 import type { HttpInstrumentationConfig, IgnoreRequestInfo } from './types/instrumentations.js'
+import debug from './debug.js'
 
 /**
  * Handles URL filtering for OpenTelemetry HTTP instrumentation.
@@ -105,15 +106,34 @@ export class HttpUrlFilter {
   shouldIgnore(request: IgnoreRequestInfo): boolean {
     const { url, method } = request
 
-    if (this.#ignoreOptionsRequests && method === 'OPTIONS') return true
+    if (this.#ignoreOptionsRequests && method === 'OPTIONS') {
+      debug('ignoring request "%s %s" (reason: OPTIONS method)', method, url)
+      return true
+    }
+
     if (!url) return false
 
     const urlPath = url.split('?')[0]
 
-    if (this.#ignoreStaticFiles && this.#isStaticFile(urlPath)) return true
-    if (this.#ignoreStaticFiles && this.#isViteDevRequest(urlPath)) return true
-    if (this.#ignoredUrls.some((pattern) => this.#matchesPattern(urlPath, pattern))) return true
-    if (this.#userIgnoreHook) return this.#userIgnoreHook(request)
+    if (this.#ignoreStaticFiles && this.#isStaticFile(urlPath)) {
+      debug('ignoring request "%s %s" (reason: static file)', method, urlPath)
+      return true
+    }
+
+    if (this.#ignoreStaticFiles && this.#isViteDevRequest(urlPath)) {
+      debug('ignoring request "%s %s" (reason: vite dev pattern)', method, urlPath)
+      return true
+    }
+
+    if (this.#ignoredUrls.some((pattern) => this.#matchesPattern(urlPath, pattern))) {
+      debug('ignoring request "%s %s" (reason: ignored url pattern)', method, urlPath)
+      return true
+    }
+
+    if (this.#userIgnoreHook && this.#userIgnoreHook(request)) {
+      debug('ignoring request "%s %s" (reason: user hook)', method, urlPath)
+      return true
+    }
 
     return false
   }
