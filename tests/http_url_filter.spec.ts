@@ -73,4 +73,36 @@ test.group('HttpUrlFilter', () => {
 
     assert.deepEqual(receivedRequest, { url: '/api/test', method: 'PUT' })
   })
+
+  test('ignores manifest and SEO files', ({ assert }) => {
+    const filter = new HttpUrlFilter()
+
+    assert.isTrue(filter.shouldIgnore({ url: '/favicon.ico' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/robots.txt' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/sitemap.xml' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/manifest.json' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/site.webmanifest' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/browserconfig.xml' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/ads.txt' }))
+
+    assert.isTrue(filter.shouldIgnore({ url: '/api/robots.txt' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/admin/sitemap.xml' }))
+
+    const filterNoStatic = new HttpUrlFilter({ ignoreStaticFiles: false })
+    assert.isFalse(filterNoStatic.shouldIgnore({ url: '/api/robots.txt' }))
+    assert.isTrue(filterNoStatic.shouldIgnore({ url: '/robots.txt' }))
+  })
+
+  test('ignores dev server patterns', ({ assert }) => {
+    const filter = new HttpUrlFilter()
+
+    assert.isTrue(filter.shouldIgnore({ url: '/@vite/client' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/@id/plugin-vue:export-helper' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/@fs/home/user/project/file.ts' }))
+    assert.isTrue(filter.shouldIgnore({ url: '/__vite_ping' }))
+
+    assert.isTrue(filter.shouldIgnore({ url: '/@react-refresh' }))
+
+    assert.isFalse(filter.shouldIgnore({ url: '/api/@vite/test' }))
+  })
 })

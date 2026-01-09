@@ -15,6 +15,13 @@ export class HttpUrlFilter {
     '/readiness',
     '/metrics',
     '/internal/metrics',
+    '/favicon.ico',
+    '/robots.txt',
+    '/sitemap.xml',
+    '/manifest.json',
+    '/site.webmanifest',
+    '/browserconfig.xml',
+    '/ads.txt',
   ]
 
   static readonly STATIC_FILE_EXTENSIONS = new Set([
@@ -47,9 +54,12 @@ export class HttpUrlFilter {
     'pdf',
     'vue',
     'svelte',
+    'webmanifest',
+    'txt',
+    'xml',
   ])
 
-  static readonly VITE_DEV_PATTERNS = ['/@vite/', '/@id/', '/@fs/', '/__vite']
+  static readonly DEV_SERVER_PATTERNS = ['/@vite/', '/@id/', '/@fs/', '/__vite', '/@react-refresh']
 
   #ignoredUrls: string[]
   #ignoreStaticFiles: boolean
@@ -82,8 +92,8 @@ export class HttpUrlFilter {
     return HttpUrlFilter.STATIC_FILE_EXTENSIONS.has(extension)
   }
 
-  #isViteDevRequest(url: string): boolean {
-    return HttpUrlFilter.VITE_DEV_PATTERNS.some((pattern) => url.startsWith(pattern))
+  #isDevServerRequest(url: string): boolean {
+    return HttpUrlFilter.DEV_SERVER_PATTERNS.some((pattern) => url.startsWith(pattern))
   }
 
   #matchesPattern(urlPath: string, pattern: string): boolean {
@@ -120,8 +130,8 @@ export class HttpUrlFilter {
       return true
     }
 
-    if (this.#ignoreStaticFiles && this.#isViteDevRequest(urlPath)) {
-      debug('ignoring request "%s %s" (reason: vite dev pattern)', method, urlPath)
+    if (this.#ignoreStaticFiles && this.#isDevServerRequest(urlPath)) {
+      debug('ignoring request "%s %s" (reason: dev server pattern)', method, urlPath)
       return true
     }
 
