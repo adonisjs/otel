@@ -14,6 +14,7 @@ export type { SpanOptions } from './decorators.js'
 export { hiddenFields, type HiddenField, type OtelLoggingPresetOptions } from './logging.js'
 
 import type { InstrumentationsConfig } from './instrumentations.js'
+import { Instrumentation } from '@opentelemetry/instrumentation'
 
 /**
  * Configuration for @adonisjs/otel
@@ -103,6 +104,18 @@ export interface OtelConfig extends Partial<
    * ```
    */
   instrumentations?: InstrumentationsConfig
+
+  /**
+   * Custom instrumentations instances.
+   *
+   * @exampl
+   * ```ts
+   * customInstrumentations: [
+   *   new MyCustomInstrumentation()
+   * ]
+   * ```
+   */
+  customInstrumentations?: Instrumentation[]
 
   /**
    * Configure automatic user context extraction in the middleware.

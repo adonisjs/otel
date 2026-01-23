@@ -133,7 +133,7 @@ export class OtelManager {
    * Process user instrumentation configuration
    */
   #processUserInstrumentations(userConfig: OtelConfig['instrumentations']) {
-    const customInstances: Instrumentation[] = []
+    const customInstances: Instrumentation[] = this.#config.customInstrumentations ?? []
     const disabledSet = new Set<string>()
     const configOverrides: Partial<InstrumentationConfigMap> = {}
     let httpConfig: HttpInstrumentationConfig | undefined
