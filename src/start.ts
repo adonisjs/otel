@@ -19,11 +19,12 @@
 import { createAddHookMessageChannel } from 'import-in-the-middle'
 import { register } from 'node:module'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import { E_OTEL_CONFIG, E_OTEL_CONFIG_INVALID } from './errors.js'
 
 async function loadConfig(path: string) {
-  return await import(path)
+  return await import(pathToFileURL(path).href)
     .then((mod) => mod.default || mod)
     .catch((error) => {
       throw new E_OTEL_CONFIG([path], { cause: error })
