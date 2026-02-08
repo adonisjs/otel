@@ -10,6 +10,7 @@
 export { configure } from './configure.js'
 export { defineConfig } from './src/define_config.js'
 export { OtelManager } from './src/otel.js'
+export { destinations } from './src/destinations.js'
 
 /**
  * Re-export OTLP exporters so users don't need to install those 100 packages

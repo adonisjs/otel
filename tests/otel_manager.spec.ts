@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
 import { OtelManager } from '../src/otel.js'
+import { destinations } from '../src/destinations.js'
 
 test.group('OtelManager', (group) => {
   const originalEnv = { ...process.env }
@@ -156,5 +157,76 @@ test.group('OtelManager | Pino instrumentation config', () => {
     })
 
     assert.isDefined(manager.sdk)
+  })
+})
+
+test.group('OtelManager | destinations', () => {
+  test('accepts OTLP destination for all signals', ({ assert }) => {
+    const manager = new OtelManager({
+      destinations: {
+        lgtm: destinations.otlp({
+          endpoint: 'http://localhost:4318',
+        }),
+      },
+    })
+
+    assert.isDefined(manager.sdk)
+  })
+
+  test('supports per-signal OTLP endpoints', ({ assert }) => {
+    const manager = new OtelManager({
+      destinations: {
+        lgtm: destinations.otlp({
+          signals: ['traces', 'logs'],
+          endpoints: {
+            traces: 'http://localhost:4318/v1/traces',
+            logs: 'http://localhost:4318/v1/logs',
+          },
+        }),
+      },
+    })
+
+    assert.isDefined(manager.sdk)
+  })
+
+  test('accepts destinations without explicit endpoint (OTLP defaults/env)', ({ assert }) => {
+    const manager = new OtelManager({
+      destinations: {
+        metricsOnly: destinations.otlp({
+          signals: ['metrics'],
+        }),
+      },
+    })
+
+    assert.isDefined(manager.sdk)
+  })
+
+  test('preserves traceExporter when destinations add trace processors', ({ assert }) => {
+    const traceExporter = {
+      export: (spans: unknown[], resultCallback: (result: { code: number }) => void) => {
+        void spans
+        resultCallback({ code: 0 })
+      },
+      shutdown: async () => {},
+      forceFlush: async () => {},
+    }
+
+    const manager = new OtelManager({
+      traceExporter: traceExporter as any,
+      destinations: {
+        tracesOnly: destinations.otlp({
+          endpoint: 'http://localhost:4318',
+          signals: ['traces'],
+        }),
+      },
+    })
+
+    const tracerProviderConfig = (manager.sdk as any)._tracerProviderConfig
+    const spanProcessors = (tracerProviderConfig?.spanProcessors ?? []) as any[]
+    const hasConfiguredTraceExporterProcessor = spanProcessors.some(
+      (processor) => processor?._exporter === traceExporter
+    )
+
+    assert.isTrue(hasConfiguredTraceExporterProcessor)
   })
 })

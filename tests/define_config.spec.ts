@@ -5,6 +5,7 @@ import {
 } from '@opentelemetry/instrumentation'
 
 import { defineConfig } from '../src/define_config.js'
+import { destinations } from '../src/destinations.js'
 
 /**
  * A mock custom instrumentation for testing purposes
@@ -128,6 +129,27 @@ test.group('defineConfig | type safety (compile-time)', () => {
 
     assert.isDefined(config.instrumentations)
   })
+
+  test('accepts OTLP destinations configuration', ({ assert }) => {
+    const config = defineConfig({
+      destinations: {
+        default: destinations.otlp({
+          endpoint: 'https://otlp.example.com',
+          headers: {
+            Authorization: 'Bearer token',
+          },
+        }),
+        tracesOnly: destinations.otlp({
+          signals: ['traces'],
+          endpoints: {
+            traces: 'https://trace-only.example.com/v1/traces',
+          },
+        }),
+      },
+    })
+
+    assert.isDefined(config.destinations)
+  })
 })
 
 test.group('defineConfig | runtime behavior', () => {
@@ -180,5 +202,21 @@ test.group('defineConfig | runtime behavior', () => {
     assert.deepEqual(config.instrumentations?.['@opentelemetry/instrumentation-http'], {
       ignoredUrls: ['/health'],
     })
+  })
+
+  test('preserves destinations config', ({ assert }) => {
+    const config = defineConfig({
+      destinations: {
+        multi: destinations.otlp({
+          name: 'multi',
+          endpoint: 'https://otlp.example.com',
+          signals: 'all',
+        }),
+      },
+    })
+
+    assert.equal(Object.keys(config.destinations ?? {}).length, 1)
+    assert.equal(config.destinations?.multi.type, 'otlp')
+    assert.equal(config.destinations?.multi.name, 'multi')
   })
 })

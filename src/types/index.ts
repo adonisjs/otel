@@ -1,5 +1,6 @@
 import type { NodeSDKConfiguration } from '@opentelemetry/sdk-node'
 import type { HttpContext } from '@adonisjs/core/http'
+import type { DestinationMap } from './destinations.js'
 
 export type {
   InstrumentationValue,
@@ -12,6 +13,14 @@ export type {
 export type { SpanOptions } from './decorators.js'
 
 export { hiddenFields, type HiddenField, type OtelLoggingPresetOptions } from './logging.js'
+export type {
+  DestinationConfig,
+  DestinationMap,
+  DestinationSignal,
+  DestinationSignals,
+  OtlpDestinationConfig,
+  OtlpDestinationOptions,
+} from './destinations.js'
 
 import type { InstrumentationsConfig } from './instrumentations.js'
 
@@ -103,6 +112,15 @@ export interface OtelConfig extends Partial<
    * ```
    */
   instrumentations?: InstrumentationsConfig
+
+  /**
+   * Configure one or many OTLP destinations and fan-out telemetry to each one.
+   *
+   * Keys are destination identifiers (for example: `lgtm`, `secondary`).
+   * Each destination can target all signals (`traces`, `metrics`, `logs`)
+   * or only a subset.
+   */
+  destinations?: DestinationMap
 
   /**
    * Configure automatic user context extraction in the middleware.

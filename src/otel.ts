@@ -6,6 +6,7 @@ import type { Instrumentation } from '@opentelemetry/instrumentation'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import {
+  BatchSpanProcessor,
   ConsoleSpanExporter,
   ParentBasedSampler,
   SimpleSpanProcessor,
@@ -28,6 +29,7 @@ import type {
 } from './types/instrumentations.js'
 import { HttpContext } from '@adonisjs/core/http'
 import { HttpUrlFilter } from './http_url_filter.js'
+import { DestinationManager, type DestinationPipelines } from './destination_manager.js'
 import debug from './debug.js'
 
 /**
@@ -274,21 +276,107 @@ export class OtelManager {
   }
 
   /**
+   * Build destination pipelines from the `destinations` config.
+   */
+  #buildDestinationPipelines(): DestinationPipelines {
+    return new DestinationManager(this.#config.destinations).buildPipelines()
+  }
+
+  /**
+   * Whether we should preserve legacy trace exporter settings when destinations add traces.
+   */
+  #shouldPreserveTraceExporter(
+    destinationSpanProcessors: DestinationPipelines['spanProcessors']
+  ): boolean {
+    const hasDestinationTraceProcessors = (destinationSpanProcessors?.length ?? 0) > 0
+    const hasExplicitSpanProcessors = (this.#config.spanProcessors?.length ?? 0) > 0
+    return hasDestinationTraceProcessors && !hasExplicitSpanProcessors
+  }
+
+  /**
+   * Merge configured span processors with destination trace processors.
+   */
+  #mergeSpanProcessors(
+    destinationSpanProcessors: DestinationPipelines['spanProcessors']
+  ): OtelConfig['spanProcessors'] {
+    const spanProcessors = [
+      ...(this.#buildSpanProcessors() ?? []),
+      ...(destinationSpanProcessors ?? []),
+    ]
+
+    /**
+     * When destinations add trace span processors, NodeSDK ignores `traceExporter`
+     * and deprecated `spanProcessor`. Re-inject them to preserve existing behavior.
+     */
+    if (this.#shouldPreserveTraceExporter(destinationSpanProcessors)) {
+      if (this.#config.traceExporter) {
+        spanProcessors.unshift(new BatchSpanProcessor(this.#config.traceExporter))
+      }
+
+      if (this.#config.spanProcessor) {
+        spanProcessors.unshift(this.#config.spanProcessor)
+      }
+    }
+
+    return spanProcessors.length > 0 ? spanProcessors : undefined
+  }
+
+  /**
+   * Merge configured metric readers with destination metric readers.
+   */
+  #mergeMetricReaders(destinationMetricReaders: DestinationPipelines['metricReaders']) {
+    const metricReaders = [
+      ...(this.#config.metricReaders ?? []),
+      ...(destinationMetricReaders ?? []),
+    ]
+
+    return metricReaders.length > 0 ? metricReaders : undefined
+  }
+
+  /**
+   * Merge configured log record processors with destination log processors.
+   */
+  #mergeLogRecordProcessors(
+    destinationLogRecordProcessors: DestinationPipelines['logRecordProcessors']
+  ) {
+    const logRecordProcessors = [
+      ...(this.#config.logRecordProcessors ?? []),
+      ...(destinationLogRecordProcessors ?? []),
+    ]
+
+    return logRecordProcessors.length > 0 ? logRecordProcessors : undefined
+  }
+
+  /**
+   * Return NodeSDK user config without internal-only keys.
+   */
+  #getNodeSdkUserConfig() {
+    const sdkConfig = { ...this.#config }
+    delete sdkConfig.destinations
+    return sdkConfig
+  }
+
+  /**
    * Create the NodeSDK instance with all configuration
    */
   #createSdk(): NodeSDK {
-    const resource = this.#buildResource()
-    const instrumentations = this.#buildInstrumentations()
+    const destinationPipelines = this.#buildDestinationPipelines()
     const sampler = this.#buildSampler()
-    const spanProcessors = this.#buildSpanProcessors()
+    const spanProcessors = this.#mergeSpanProcessors(destinationPipelines.spanProcessors)
+    const metricReaders = this.#mergeMetricReaders(destinationPipelines.metricReaders)
+    const logRecordProcessors = this.#mergeLogRecordProcessors(
+      destinationPipelines.logRecordProcessors
+    )
 
     return new NodeSDK({
-      ...this.#config,
-      resource,
+      ...this.#getNodeSdkUserConfig(),
+      resource: this.#buildResource(),
       serviceName: this.serviceName,
-      instrumentations,
+      instrumentations: this.#buildInstrumentations(),
       ...(sampler && { sampler }),
       ...(spanProcessors && { spanProcessors }),
+      ...(metricReaders && { metricReaders }),
+      ...(logRecordProcessors && { logRecordProcessors }),
     })
   }
 
