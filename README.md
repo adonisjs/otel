@@ -27,12 +27,9 @@ In order to ensure that the AdonisJS community is welcoming to all, please revie
 AdonisJS OpenTelemetry is open-sourced software licensed under the [MIT license](LICENSE.md).
 
 [gh-workflow-image]: https://img.shields.io/github/actions/workflow/status/adonisjs/otel/checks.yml?style=for-the-badge
-[gh-workflow-url]: https://github.com/adonisjs/otel/actions/workflows/checks.yml "Github action"
-
+[gh-workflow-url]: https://github.com/adonisjs/otel/actions/workflows/checks.yml 'Github action'
 [npm-image]: https://img.shields.io/npm/v/@adonisjs/otel/latest.svg?style=for-the-badge&logo=npm
-[npm-url]: https://www.npmjs.com/package/@adonisjs/otel/v/latest "npm"
-
+[npm-url]: https://www.npmjs.com/package/@adonisjs/otel/v/latest 'npm'
 [typescript-image]: https://img.shields.io/badge/Typescript-294E80.svg?style=for-the-badge&logo=typescript
-
 [license-url]: LICENSE.md
 [license-image]: https://img.shields.io/github/license/adonisjs/otel?style=for-the-badge

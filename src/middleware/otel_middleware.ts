@@ -1,4 +1,4 @@
-import { context, Span, trace } from '@opentelemetry/api'
+import { context, type Span, trace } from '@opentelemetry/api'
 import { getRPCMetadata, RPCType } from '@opentelemetry/core'
 import {
   ATTR_HTTP_RESPONSE_STATUS_CODE,
