@@ -1,7 +1,7 @@
 {
   "name": "@adonisjs/otel",
   "description": "OpenTelemetry integration for AdonisJS with sensible defaults and zero-config setup",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "engines": {
     "node": ">=20.6.0"
   },
