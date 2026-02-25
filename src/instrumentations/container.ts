@@ -4,7 +4,7 @@ import type { ContainerMakeTracingData } from '@adonisjs/core/types/container'
 import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api'
 import { InstrumentationBase } from '@opentelemetry/instrumentation'
 import { tracingChannels } from '@adonisjs/core/container'
-import { TracingChannelSubscribers } from 'node:diagnostics_channel'
+import { type TracingChannelSubscribers } from 'node:diagnostics_channel'
 
 /**
  * OpenTelemetry instrumentation for AdonisJS IoC Container.

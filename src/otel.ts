@@ -1,6 +1,6 @@
 import {
   getNodeAutoInstrumentations,
-  InstrumentationConfigMap,
+  type InstrumentationConfigMap,
 } from '@opentelemetry/auto-instrumentations-node'
 import type { Instrumentation } from '@opentelemetry/instrumentation'
 import { resourceFromAttributes } from '@opentelemetry/resources'

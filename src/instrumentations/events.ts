@@ -4,7 +4,7 @@ import type { TracingChannelSubscribers } from 'node:diagnostics_channel'
 import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api'
 import { InstrumentationBase } from '@opentelemetry/instrumentation'
 import { tracingChannels } from '@adonisjs/core/events'
-import { AllowedEventTypes, EventDispatchData } from '@adonisjs/core/types/events'
+import { type AllowedEventTypes, type EventDispatchData } from '@adonisjs/core/types/events'
 
 /**
  * OpenTelemetry instrumentation for AdonisJS Event Emitter.

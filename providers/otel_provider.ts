@@ -1,7 +1,7 @@
 import { SpanStatusCode } from '@opentelemetry/api'
 import { configProvider } from '@adonisjs/core'
 import type { ApplicationService } from '@adonisjs/core/types'
-import { ExceptionHandler, HttpContext } from '@adonisjs/core/http'
+import { ExceptionHandler, type HttpContext } from '@adonisjs/core/http'
 
 import { getCurrentSpan } from '../src/helpers.js'
 import type { OtelConfig } from '../src/types/index.js'

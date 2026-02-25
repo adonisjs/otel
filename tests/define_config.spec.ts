@@ -1,7 +1,7 @@
 import { test } from '@japa/runner'
 import {
   InstrumentationBase,
-  InstrumentationNodeModuleDefinition,
+  type InstrumentationNodeModuleDefinition,
 } from '@opentelemetry/instrumentation'
 
 import { defineConfig } from '../src/define_config.js'
