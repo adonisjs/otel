@@ -1,4 +1,4 @@
-import { createError } from '@poppinss/utils'
+import { createError } from '@poppinss/utils/exception'
 
 export const E_OTEL_CONFIG = createError<[configPath: string]>(
   'Failed to load OpenTelemetry config at "%s". Make sure the file exists and has no syntax errors.',
