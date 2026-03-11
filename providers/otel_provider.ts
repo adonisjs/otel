@@ -41,9 +41,7 @@ export default class OtelProvider {
    */
   #registerMiddleware() {
     this.app.container.singleton(OtelMiddleware, async () => {
-      const otelConfigProvider = this.app.config.get<OtelConfig>('otel', {})
-      const config = await configProvider.resolve<OtelConfig>(this.app, otelConfigProvider)
-
+      const config = this.app.config.get<OtelConfig>('otel', {})
       return new OtelMiddleware({ userContext: config?.userContext })
     })
   }
