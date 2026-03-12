@@ -10,7 +10,7 @@ OpenTelemetry integration for AdonisJS with sensible defaults and zero-config se
 
 ## Official Documentation
 
-The documentation is available on the [AdonisJS website](https://docs.adonisjs.com/guides/digging-deeper/open-telemetry)
+The documentation is available on the [AdonisJS website](https://docs.adonisjs.com/guides/digging-deeper/opentelemetry)
 
 ## Contributing
 
