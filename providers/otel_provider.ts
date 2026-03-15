@@ -1,5 +1,4 @@
 import { SpanStatusCode } from '@opentelemetry/api'
-import { configProvider } from '@adonisjs/core'
 import type { ApplicationService } from '@adonisjs/core/types'
 import { ExceptionHandler, type HttpContext } from '@adonisjs/core/http'
 
