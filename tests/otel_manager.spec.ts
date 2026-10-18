@@ -1,4 +1,9 @@
 import { test } from '@japa/runner'
+import { execFile } from 'node:child_process'
+import { once } from 'node:events'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
+import { promisify } from 'node:util'
 import { OtelManager } from '../src/otel.js'
 import { destinations } from '../src/destinations.js'
 
@@ -201,32 +206,70 @@ test.group('OtelManager | destinations', () => {
     assert.isDefined(manager.sdk)
   })
 
-  test('preserves traceExporter when destinations add trace processors', ({ assert }) => {
-    const traceExporter = {
-      export: (spans: unknown[], resultCallback: (result: { code: number }) => void) => {
-        void spans
-        resultCallback({ code: 0 })
-      },
-      shutdown: async () => {},
-      forceFlush: async () => {},
-    }
-
-    const manager = new OtelManager({
-      traceExporter: traceExporter as any,
-      destinations: {
-        tracesOnly: destinations.otlp({
-          endpoint: 'http://localhost:4318',
-          signals: ['traces'],
-        }),
-      },
+  test('preserves traceExporter when destinations add trace processors', async ({ assert }) => {
+    const destinationSpans: string[] = []
+    const server = createServer(async (request, response) => {
+      const chunks: Buffer[] = []
+      for await (const chunk of request) chunks.push(chunk)
+      const body = JSON.parse(Buffer.concat(chunks).toString())
+      for (const resource of body.resourceSpans) {
+        for (const scope of resource.scopeSpans) {
+          for (const span of scope.spans) destinationSpans.push(span.name)
+        }
+      }
+      response.setHeader('content-type', 'application/json')
+      response.end('{}')
     })
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
 
-    const tracerProviderConfig = (manager.sdk as any)._tracerProviderConfig
-    const spanProcessors = (tracerProviderConfig?.spanProcessors ?? []) as any[]
-    const hasConfiguredTraceExporterProcessor = spanProcessors.some(
-      (processor) => processor?._exporter === traceExporter
-    )
-
-    assert.isTrue(hasConfiguredTraceExporterProcessor)
-  })
+    try {
+      const { port } = server.address() as AddressInfo
+      // Isolate the SDK's global providers from the other tracing tests.
+      const { stdout } = await promisify(execFile)(
+        process.execPath,
+        [
+          '--import',
+          new URL('../tsnode.esm.js', import.meta.url).href,
+          '--input-type=module',
+          '--eval',
+          `
+            import { trace } from '@opentelemetry/api'
+            import { OtelManager } from ${JSON.stringify(new URL('../src/otel.js', import.meta.url).href)}
+            const exported = []
+            const manager = new OtelManager({
+              autoDetectResources: false,
+              logRecordProcessors: [],
+              metricReaders: [],
+              traceExporter: {
+                export(spans, callback) {
+                  exported.push(...spans.map(span => span.name))
+                  callback({ code: 0 })
+                },
+                async shutdown() {},
+              },
+              destinations: {
+                tracesOnly: {
+                  type: 'otlp', enabled: true, signals: ['traces'],
+                  endpoint: 'http://127.0.0.1:${port}',
+                },
+              },
+            })
+            manager.start()
+            trace.getTracer('destination-test').startSpan('retained-exporter').end()
+            await manager.shutdown()
+            console.log(JSON.stringify(exported))
+          `,
+        ],
+        { timeout: 15_000 }
+      )
+      assert.deepEqual(JSON.parse(stdout), ['retained-exporter'])
+      assert.deepEqual(destinationSpans, ['retained-exporter'])
+    } finally {
+      server.closeAllConnections()
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()))
+      })
+    }
+  }).timeout(20_000)
 })

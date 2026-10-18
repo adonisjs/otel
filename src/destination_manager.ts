@@ -156,7 +156,7 @@ export class DestinationManager {
           ...(compression !== undefined && { compression }),
         })
 
-        logRecordProcessors.push(new BatchLogRecordProcessor(exporter, batchProcessorConfig))
+        logRecordProcessors.push(new BatchLogRecordProcessor({ exporter, ...batchProcessorConfig }))
       }
 
       debug('configured destination "%s" for signals: %O', destinationName, [...signals])
