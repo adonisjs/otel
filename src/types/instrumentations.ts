@@ -6,9 +6,7 @@ import type { Instrumentation } from '@opentelemetry/instrumentation'
  * Value for a known instrumentation: config object, instance, or disabled
  */
 export type InstrumentationValue<K extends keyof InstrumentationConfigMap> =
-  | InstrumentationConfigMap[K]
-  | Instrumentation
-  | { enabled: false }
+  InstrumentationConfigMap[K] | Instrumentation | { enabled: false }
 
 /**
  * Value for a custom instrumentation: instance or disabled
@@ -91,8 +89,7 @@ export interface PinoInstrumentationConfig extends Omit<
  * Keys of instrumentations with custom extended configs
  */
 type ExtendedInstrumentationKeys =
-  | '@opentelemetry/instrumentation-http'
-  | '@opentelemetry/instrumentation-pino'
+  '@opentelemetry/instrumentation-http' | '@opentelemetry/instrumentation-pino'
 
 /**
  * All possible values for any instrumentation key
@@ -112,19 +109,14 @@ type AnyInstrumentationValue =
  */
 export type InstrumentationsConfig = {
   '@opentelemetry/instrumentation-http'?:
-    | HttpInstrumentationConfig
-    | Instrumentation
-    | { enabled: false }
+    HttpInstrumentationConfig | Instrumentation | { enabled: false }
 
   '@opentelemetry/instrumentation-pino'?:
-    | PinoInstrumentationConfig
-    | Instrumentation
-    | { enabled: false }
+    PinoInstrumentationConfig | Instrumentation | { enabled: false }
 } & {
-  [K in Exclude<
-    keyof InstrumentationConfigMap,
-    ExtendedInstrumentationKeys
-  >]?: InstrumentationValue<K>
+  [
+    K in Exclude<keyof InstrumentationConfigMap, ExtendedInstrumentationKeys>
+  ]?: InstrumentationValue<K>
 } & {
   [key: string & {}]: AnyInstrumentationValue | undefined
 }
