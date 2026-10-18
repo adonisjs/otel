@@ -34,10 +34,15 @@ export interface OtelConfig extends Partial<
   Omit<NodeSDKConfiguration, 'resource' | 'instrumentations'>
 > {
   /**
-   * Enable or disable OpenTelemetry entirely.
+   * Enable or disable the OpenTelemetry SDK.
    *
    * When disabled, no SDK is initialized and no traces are collected.
    * Useful for tests or local development without a collector.
+   *
+   * `init()` registers the ESM loader hook before reading this option.
+   * To skip initialization before registering the hook, set
+   * `OTEL_SDK_DISABLED=true` in the process environment before calling `init()`.
+   * That variable takes precedence over `enabled: true`.
    *
    * @default true (false in 'test' environment)
    */

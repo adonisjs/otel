@@ -12,6 +12,22 @@ OpenTelemetry integration for AdonisJS with sensible defaults and zero-config se
 
 The documentation is available on the [AdonisJS website](https://docs.adonisjs.com/guides/digging-deeper/opentelemetry)
 
+## Disabling telemetry
+
+Set `OTEL_SDK_DISABLED=true` before starting your application to skip OpenTelemetry initialization:
+
+```sh
+OTEL_SDK_DISABLED=true node bin/server.js
+```
+
+With this flag, `init()` returns before it registers the ESM loader hook, imports the SDK, or loads `config/otel.ts`. The flag overrides `enabled: true` in the configuration. The provider and middleware can remain registered.
+
+Only `true`, in any letter case, skips initialization. Other values leave the configuration in control. Setting the variable to `false` does not force the SDK to start or change the default of disabling it in tests.
+
+Set the variable in your shell or deployment environment before `init()` runs. A value loaded later from `.env` by `#start/env` is too late. Changing the flag after initialization does not remove an existing hook or stop a running SDK.
+
+The `enabled: false` configuration option prevents the SDK from starting, but leaves the loader hook installed. The hook must precede the configuration because its imports can load dependencies that need instrumentation. To avoid the hook, use `OTEL_SDK_DISABLED=true` or skip the `init()` call.
+
 ## Contributing
 
 One of the primary goals of AdonisJS is to have a vibrant community of users and contributors who believes in the principles of the framework.

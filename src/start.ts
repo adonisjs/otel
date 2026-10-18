@@ -38,6 +38,9 @@ function setupHooks() {
 }
 
 export async function init(dirname: string) {
+  // Check before registering hooks or loading the SDK and application config.
+  if (process.env.OTEL_SDK_DISABLED?.toLowerCase() === 'true') return
+
   // Setup import-in-the-middle hooks for auto-instrumentation
   const waitForAllMessagesAcknowledged = setupHooks()
 
