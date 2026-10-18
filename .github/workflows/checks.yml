@@ -10,10 +10,38 @@ permissions:
 
 jobs:
   lint:
-    uses: adonisjs/.github/.github/workflows/lint.yml@616f1f5863b4a3a73eb49cd0d16e8719bcd34e7a # next
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run lint
 
   typecheck:
-    uses: adonisjs/.github/.github/workflows/typecheck.yml@616f1f5863b4a3a73eb49cd0d16e8719bcd34e7a # next
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run typecheck
 
   tests:
-    uses: adonisjs/.github/.github/workflows/test.yml@616f1f5863b4a3a73eb49cd0d16e8719bcd34e7a # next
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [24, latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm test
