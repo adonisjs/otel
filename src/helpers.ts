@@ -56,6 +56,12 @@ export function setAttributes(attributes: Attributes): void {
  * - Capturing exceptions and setting error status
  * - Async/await support
  *
+ * Promise results are chained to end the span and propagate rejections to the caller.
+ * Custom properties and methods on promise results, including `Symbol.asyncIterator`,
+ * are not preserved. Async iteration itself is not tracked.
+ * To trace pagination, consume the iterator inside an async callback instead of
+ * returning the list promise. This also captures errors from subsequent pages.
+ *
  * @example
  * ```ts
  * import { record } from '@adonisjs/otel'
@@ -74,6 +80,16 @@ export function setAttributes(attributes: Attributes): void {
  * const order = await record('order.process', async (span) => {
  *   span.setAttributes({ 'order.id': orderId })
  *   return await processOrder(orderId)
+ * })
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Trace the full pagination, not just the first page.
+ * await record('users.sync', async () => {
+ *   for await (const user of userService.list()) {
+ *     await syncUser(user)
+ *   }
  * })
  * ```
  */

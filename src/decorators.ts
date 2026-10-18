@@ -35,6 +35,10 @@ function wrapMethod(
  * - Capturing exceptions and setting error status
  * - Async/await support
  *
+ * Uses {@link record}, which does not preserve custom promise methods or
+ * `Symbol.asyncIterator` on promise results. For pagination, decorate the async
+ * method that consumes the iterator, not the method that returns the list promise.
+ *
  * @example
  * ```ts
  * import { span } from '@adonisjs/otel'
@@ -70,6 +74,10 @@ export function span(options?: SpanOptions) {
  * - Creating and closing spans for each method
  * - Capturing exceptions and setting error status
  * - Async/await support
+ *
+ * Uses {@link record}, which does not preserve custom promise methods or
+ * `Symbol.asyncIterator` on promise results. If a class returns such promises,
+ * use {@link span} on individual consumer methods instead of decorating the class.
  *
  * @example
  * ```ts
