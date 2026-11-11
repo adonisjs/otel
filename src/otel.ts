@@ -3,7 +3,13 @@ import {
   type InstrumentationConfigMap,
 } from '@opentelemetry/auto-instrumentations-node'
 import type { Instrumentation } from '@opentelemetry/instrumentation'
-import { resourceFromAttributes } from '@opentelemetry/resources'
+import {
+  envDetector,
+  hostDetector,
+  osDetector,
+  processDetector,
+  resourceFromAttributes,
+} from '@opentelemetry/resources'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import {
   BatchSpanProcessor,
@@ -355,6 +361,16 @@ export class OtelManager {
   }
 
   /**
+   * NodeSDK's default resource detectors without `serviceInstanceIdDetector`.
+   * Detected attributes override ours, so that detector would replace our
+   * `service.instance.id` (the HOSTNAME) with a random UUID on every start.
+   */
+  #buildResourceDetectors() {
+    if (this.#config.resourceDetectors || process.env.OTEL_NODE_RESOURCE_DETECTORS) return
+    return [processDetector, hostDetector, osDetector, envDetector]
+  }
+
+  /**
    * Create the NodeSDK instance with all configuration
    */
   #createSdk(): NodeSDK {
@@ -365,6 +381,7 @@ export class OtelManager {
     const logRecordProcessors = this.#mergeLogRecordProcessors(
       destinationPipelines.logRecordProcessors
     )
+    const resourceDetectors = this.#buildResourceDetectors()
 
     return new NodeSDK({
       ...this.#getNodeSdkUserConfig(),
@@ -375,6 +392,7 @@ export class OtelManager {
       ...(spanProcessors && { spanProcessors }),
       ...(metricReaders && { metricReaders }),
       ...(logRecordProcessors && { logRecordProcessors }),
+      ...(resourceDetectors && { resourceDetectors }),
     })
   }
 

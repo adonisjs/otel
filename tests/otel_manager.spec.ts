@@ -272,4 +272,47 @@ test.group('OtelManager | destinations', () => {
       })
     }
   }).timeout(20_000)
+
+  test('keeps HOSTNAME as service.instance.id with default resource detectors', async ({
+    assert,
+  }) => {
+    // Isolate the SDK's global providers from the other tracing tests.
+    const { stdout } = await promisify(execFile)(
+      process.execPath,
+      [
+        '--import',
+        new URL('../tsnode.esm.js', import.meta.url).href,
+        '--input-type=module',
+        '--eval',
+        `
+          import { trace } from '@opentelemetry/api'
+          import { OtelManager } from ${JSON.stringify(new URL('../src/otel.js', import.meta.url).href)}
+          const resources = []
+          const manager = new OtelManager({
+            logRecordProcessors: [],
+            metricReaders: [],
+            traceExporter: {
+              export(spans, callback) {
+                resources.push(...spans.map(span => span.resource.attributes))
+                callback({ code: 0 })
+              },
+              async shutdown() {},
+            },
+          })
+          manager.start()
+          trace.getTracer('resource-test').startSpan('span').end()
+          await manager.shutdown()
+          console.log(JSON.stringify(resources))
+        `,
+      ],
+      {
+        timeout: 15_000,
+        env: { ...process.env, HOSTNAME: 'web-1', OTEL_NODE_RESOURCE_DETECTORS: '' },
+      }
+    )
+
+    const [resource] = JSON.parse(stdout)
+    assert.equal(resource['service.instance.id'], 'web-1')
+    assert.isString(resource['host.name'])
+  }).timeout(20_000)
 })
