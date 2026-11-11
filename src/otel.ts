@@ -312,7 +312,7 @@ export class OtelManager {
     ]
 
     /**
-     * When destinations add trace span processors, NodeSDK ignores `traceExporter`
+     * When destinations add trace span processors, NodeSDK ignores `traceExporter`.
      * Re-inject it to preserve existing behavior.
      */
     if (
