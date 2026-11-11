@@ -1,3 +1,5 @@
+import { IncomingMessage, ServerResponse } from 'node:http'
+import { Socket } from 'node:net'
 import { test } from '@japa/runner'
 import { context, trace } from '@opentelemetry/api'
 import { getRPCMetadata, RPCType, setRPCMetadata } from '@opentelemetry/core'
@@ -380,6 +382,55 @@ test.group('OtelMiddleware', (group) => {
     assert.equal(spans[0].attributes['user.tenantId'], 'tenant-123')
     assert.equal(spans[0].attributes['user.plan'], 'enterprise')
   })
+  test('tags SSE responses whose content type is passed inline to writeHead', async ({
+    assert,
+  }) => {
+    const middleware = new OtelMiddleware({})
+    const ctx = createMockContext({ route: { pattern: '/__transmit/events' } })
+    const tracer = trace.getTracer('test')
+
+    await tracer.startActiveSpan('http-request', async (span) => {
+      await middleware.handle(ctx, async () => {
+        ctx.response.response.writeHead(200, { 'Content-Type': 'text/event-stream' })
+      })
+      span.end()
+    })
+
+    assert.equal(getFinishedSpans()[0].attributes['http.connection_type'], 'sse')
+  })
+
+  test('tags SSE responses whose content type is set before an implicit writeHead', async ({
+    assert,
+  }) => {
+    const middleware = new OtelMiddleware({})
+    const ctx = createMockContext({ route: { pattern: '/stream' } })
+    const tracer = trace.getTracer('test')
+
+    await tracer.startActiveSpan('http-request', async (span) => {
+      await middleware.handle(ctx, async () => {
+        ctx.response.response.setHeader('content-type', 'text/event-stream; charset=utf-8')
+        ctx.response.response.write('data: hello\n\n')
+      })
+      span.end()
+    })
+
+    assert.equal(getFinishedSpans()[0].attributes['http.connection_type'], 'sse')
+  })
+
+  test('does not tag regular responses with a connection type', async ({ assert }) => {
+    const middleware = new OtelMiddleware({})
+    const ctx = createMockContext({ route: { pattern: '/users' } })
+    const tracer = trace.getTracer('test')
+
+    await tracer.startActiveSpan('http-request', async (span) => {
+      await middleware.handle(ctx, async () => {
+        ctx.response.response.writeHead(200, { 'Content-Type': 'application/json' })
+      })
+      span.end()
+    })
+
+    assert.notProperty(getFinishedSpans()[0].attributes, 'http.connection_type')
+  })
 })
 
 /**
@@ -396,7 +447,10 @@ function createMockContext(
   return {
     request: { method: () => overrides.method ?? 'GET' },
     route: overrides.route ?? null,
-    response: { getStatus: () => overrides.responseStatus ?? 200 },
+    response: {
+      getStatus: () => overrides.responseStatus ?? 200,
+      response: new ServerResponse(new IncomingMessage(new Socket())),
+    },
     auth: overrides.auth,
   } as any
 }

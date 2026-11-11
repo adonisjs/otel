@@ -4,6 +4,7 @@ import {
   ATTR_HTTP_RESPONSE_STATUS_CODE,
   ATTR_HTTP_ROUTE,
 } from '@opentelemetry/semantic-conventions'
+import type { ServerResponse } from 'node:http'
 import type { HttpContext } from '@adonisjs/core/http'
 import type { NextFn } from '@adonisjs/core/types/http'
 import { setUser } from '../helpers.js'
@@ -64,6 +65,35 @@ export default class OtelMiddleware {
   }
 
   /**
+   * Tags Server-Sent Events responses with `http.connection_type=sse`, so backends
+   * can tell these long-lived requests apart from regular ones.
+   *
+   * Wraps `writeHead` because writers such as Transmit pass the content type inline
+   * to `writeHead()`, where `getHeader()` never sees it. Node.js also calls
+   * `writeHead` implicitly on the first `write()` or `flushHeaders()`.
+   */
+  #detectSse(ctx: HttpContext, span: Span): void {
+    const response = ctx.response.response
+    const writeHead = response.writeHead
+
+    response.writeHead = function (this: ServerResponse, ...args: any[]) {
+      const inlineHeaders = args.find(
+        (arg) => typeof arg === 'object' && arg !== null && !Array.isArray(arg)
+      )
+      const inlineKey = inlineHeaders
+        ? Object.keys(inlineHeaders).find((key) => key.toLowerCase() === 'content-type')
+        : undefined
+      const contentType = inlineKey ? inlineHeaders[inlineKey] : this.getHeader('content-type')
+
+      if (String(contentType).toLowerCase().includes('text/event-stream')) {
+        span.setAttribute('http.connection_type', 'sse')
+      }
+
+      return writeHead.apply(this, args as Parameters<typeof writeHead>)
+    } as typeof writeHead
+  }
+
+  /**
    * Enriches active span with route info, user context, and response status.
    */
   async handle(ctx: HttpContext, next: NextFn) {
@@ -78,6 +108,7 @@ export default class OtelMiddleware {
     }
 
     span.setAttributes({ 'adonis.route.name': route?.name ?? 'unknown' })
+    this.#detectSse(ctx, span)
 
     await this.#setUserFromAuth(ctx)
 
