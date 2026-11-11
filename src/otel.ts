@@ -11,7 +11,7 @@ import {
   ParentBasedSampler,
   SimpleSpanProcessor,
   TraceIdRatioBasedSampler,
-} from '@opentelemetry/sdk-trace-base'
+} from '@opentelemetry/sdk-trace'
 import {
   ATTR_HTTP_ROUTE,
   ATTR_SERVICE_NAME,
@@ -270,7 +270,8 @@ export class OtelManager {
   #buildSpanProcessors() {
     const processors = this.#config.spanProcessors ? [...this.#config.spanProcessors] : []
 
-    if (this.#config.debug) processors.push(new SimpleSpanProcessor(new ConsoleSpanExporter()))
+    if (this.#config.debug)
+      processors.push(new SimpleSpanProcessor({ exporter: new ConsoleSpanExporter() }))
 
     return processors.length > 0 ? processors : undefined
   }
@@ -306,16 +307,13 @@ export class OtelManager {
 
     /**
      * When destinations add trace span processors, NodeSDK ignores `traceExporter`
-     * and deprecated `spanProcessor`. Re-inject them to preserve existing behavior.
+     * Re-inject it to preserve existing behavior.
      */
-    if (this.#shouldPreserveTraceExporter(destinationSpanProcessors)) {
-      if (this.#config.traceExporter) {
-        spanProcessors.unshift(new BatchSpanProcessor(this.#config.traceExporter))
-      }
-
-      if (this.#config.spanProcessor) {
-        spanProcessors.unshift(this.#config.spanProcessor)
-      }
+    if (
+      this.#shouldPreserveTraceExporter(destinationSpanProcessors) &&
+      this.#config.traceExporter
+    ) {
+      spanProcessors.unshift(new BatchSpanProcessor({ exporter: this.#config.traceExporter }))
     }
 
     return spanProcessors.length > 0 ? spanProcessors : undefined

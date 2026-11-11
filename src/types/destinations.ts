@@ -1,5 +1,5 @@
 import type { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import type { BufferConfig } from '@opentelemetry/sdk-trace-base'
+import type { BatchSpanProcessorOptions } from '@opentelemetry/sdk-trace'
 
 export type DestinationSignal = 'traces' | 'metrics' | 'logs'
 
@@ -7,7 +7,7 @@ export type DestinationSignals = 'all' | DestinationSignal[]
 
 type OtlpExporterConfig = NonNullable<ConstructorParameters<typeof OTLPTraceExporter>[0]>
 type DestinationBatchConfig = Pick<
-  BufferConfig,
+  BatchSpanProcessorOptions,
   'maxExportBatchSize' | 'scheduledDelayMillis' | 'exportTimeoutMillis' | 'maxQueueSize'
 >
 

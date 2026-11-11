@@ -4,7 +4,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs'
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
 import type { NodeSDKConfiguration } from '@opentelemetry/sdk-node'
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace'
 
 import type { DestinationConfig, DestinationMap, DestinationSignal } from './types/destinations.js'
 import debug from './debug.js'
@@ -118,7 +118,7 @@ export class DestinationManager {
           ...(compression !== undefined && { compression }),
         })
 
-        spanProcessors.push(new BatchSpanProcessor(exporter, batchProcessorConfig))
+        spanProcessors.push(new BatchSpanProcessor({ exporter, ...batchProcessorConfig }))
       }
 
       if (signals.has('metrics')) {
